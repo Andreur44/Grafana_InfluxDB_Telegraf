@@ -1,0 +1,47 @@
+version: '3.9'
+services:
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:latest
+    volumes:
+      - grafana_volume:/var/lib/grafana
+      - grafana_volume:/var/lib/grafana/plugins
+    depends_on:
+      - influxdb
+    ports:
+      - 3000:3000
+    environment:
+      - GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS:grafana-piechart-panel
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+    restart: unless-stopped
+    networks:
+      - grafana 
+  influxdb:
+    image: influxdb:1.8-alpine
+    container_name: influxdb
+    ports:
+      - 8087:8086
+      - 2004:2003
+    environment:
+      - INFLUXDB_DB=default
+      - INFLUXDB_ADMIN_USER=influx
+      - INFLUXDB_ADMIN_PASSWORD=Barcelona1
+    networks:
+      - grafana 
+  telegraf:
+    container_name: telegraf
+    image: telegraf:1.28.5
+    build:
+      context: .
+      dockerfile: telegraffile   
+    volumes:
+      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    links:
+      - influxdb
+    networks:
+      - grafana     
+volumes:
+  grafana_volume:
+networks:
+  grafana:
+    name: grafana
